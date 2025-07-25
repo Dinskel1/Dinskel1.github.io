@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>团队成员 - GXCStudio</title>
+    <style>
+        /* 继承主站样式 */
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+                        url('ground.png') center/cover no-repeat;
+        }
+
+        .main-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            gap: 20px;
+        }
+
+        .team-container {
+            max-width: 1200px;
+            margin: 100px auto 0;
+            padding: 30px;
+        }
+
+        .member-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .member-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .member-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .member-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: block;
+            border: 3px solid #d03d3d;
+        }
+
+        .member-name {
+            color: #d03d3d;
+            text-align: center;
+            margin: 0 0 10px 0;
+            font-size: 1.4em;
+        }
+
+        .member-role {
+            color: #666;
+            text-align: center;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        .member-bio {
+            color: #444;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <nav class="main-nav">
+        <a href="index.html" class="nav-link">返回首页</a>
+    </nav>
+
+    <div class="team-container">
+        <div class="member-grid">
+            <!-- 创始人 -->
+            <div class="member-card">
+                <img src="avatars/dinskel.png" alt="Dinskel" class="member-avatar">
+                <h2 class="member-name">Dinskel</h2>
+                <p class="member-role">创始人 & 主策划</p>
+                <p class="member-bio">
+                    牢腐竹<br>
+                    游戏机制设计<br>
+                    模组制作<br>
+                </p>
+            </div>
+
+            <!-- 核心成员示例 -->
+            <div class="member-card">
+                <img src="avatars/txgoldenstar.png" alt="Luna" class="member-avatar">
+                <h2 class="member-name">TxGoldenStar</h2>
+                <p class="member-role">美术 & 副程序</p>
+                <p class="member-bio">
+                    材质设计<br>
+					模组制作<br>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
