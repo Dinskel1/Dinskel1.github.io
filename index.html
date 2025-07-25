@@ -1,11 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<title>菜鸟教程(runoob.com)</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GXCStudio 访问入口</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+            padding: 20px;
+        }
+        
+        .modern-list {
+            list-style: none; /* 移除默认列表符号 */
+            padding: 0;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .list-item {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            margin-bottom: 0;
+        }
+        
+        .list-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .list-item:active {
+            transform: scale(0.98);
+        }
+        
+        .list-link {
+            display: flex;
+            align-items: center;
+            padding: 22px 30px;
+            text-decoration: none;
+            color: #333;
+        }
+        
+        .icon {
+            margin-right: 20px;
+            font-size: 28px;
+            color: #4361ee;
+        }
+        
+        .content {
+            flex-grow: 1;
+        }
+        
+        .title {
+            font-weight: 600;
+            font-size: 20px;
+            margin-bottom: 5px;
+            color: #2d3748;
+        }
+        
+        .description {
+            color: #718096;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .arrow {
+            font-size: 24px;
+            color: #a0aec0;
+            transition: transform 0.3s;
+        }
+        
+        .list-item:hover .arrow {
+            transform: translateX(5px);
+            color: #4361ee;
+        }
+        
+        @media (max-width: 600px) {
+            .list-link {
+                padding: 18px 20px;
+            }
+            .title {
+                font-size: 18px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>我的第一个标题</h1>
-    <p>我的第一个段落。</p>
+    <ul class="modern-list" role="list">
+        <li class="list-item" role="listitem">
+            <a href="gxc.html" class="list-link" aria-label="访问 GXCStudio 官网">
+                <div class="icon"></div>
+                <div class="content">
+                    <div class="title">访问GXCStudio官网</div>
+                    <div class="description">氙源工坊官网</div>
+                </div>
+                <div class="arrow">→</div>
+            </a>
+        </li>
+    </ul>
 </body>
 </html>
