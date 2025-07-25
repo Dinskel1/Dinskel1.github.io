@@ -23,6 +23,11 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
+        /* 新增：容器间距样式 */
+        .download-container + .download-container {
+            margin-top: 30px;
+        }
+
         .download-title {
             color: #d03d3d;
             border-left: 5px solid #d03d3d;
@@ -44,10 +49,10 @@
             border-radius: 25px;
             transition: all 0.3s;
             font-size: 1.1em;
-			margin-top: 25px;
-			margin-bottom: 15px; /* 可选，增加下方间距 */
-			display: block; /* 改为块级元素可以更好控制间距 */
-			width: fit-content; /* 保持按钮自适应宽度 */
+            margin-top: 25px;
+            margin-bottom: 15px;
+            display: block;
+            width: fit-content;
         }
 
         .download-button:hover {
@@ -84,6 +89,7 @@
         <a href="gxc.html" class="nav-link">返回首页</a>
     </nav>
 
+    <!-- 第一个下载容器 -->
     <div class="download-container">
         <h1 class="download-title">2017之旅行整合包Beta 1.0</h1>
         <div class="download-info">
@@ -101,22 +107,37 @@
             <p>▶ 独立显卡（推荐）</p>
         </div>
 
-        <a href="https://pan.quark.cn/s/752a92252baa" class="download-button" id="downloadBtn" download>立即下载 (295MB)</a>
+        <a href="https://pan.quark.cn/s/752a92252baa" class="download-button" download>立即下载 (295MB)</a>
+    </div>
+
+    <!-- 纵向添加的第二个下载容器 -->
+    <div class="download-container">
+        <h1 class="download-title">PLAYFUL 1.0</h1>
+        <div class="download-info">
+            <p>版本：Beta 1.0 (Minecraft 1.12.2)</p>
+            <p>包含内容：</p>
+            <ul>
+                <li>优化模组，美化模组，辅助模组和优质光影</li>
+            </ul>
+        </div>
+
+        <div class="requirements">
+            <h3>系统要求：</h3>
+            <p>▶ 至少 4GB 可用内存</p>
+            <p>▶ Java 21 运行环境</p>
+        </div>
+
+        <a href="https://pan.quark.cn/s/b9e838d745e8" class="download-button" download>立即下载 (295MB)</a>
     </div>
 
     <script>
-        // 添加下载动画
-        const downloadBtn = document.getElementById('downloadBtn');
-            
-            // 添加点击动画
-            this.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                this.style.transform = 'scale(1)';
-            }, 200);
-            
-            setTimeout(() => {
-                document.body.removeChild(iframe);
-            }, 5000);
+        document.querySelectorAll('.download-button').forEach(button => {
+            button.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 200);
+            });
         });
     </script>
 </body>
