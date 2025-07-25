@@ -101,27 +101,18 @@
             <p>▶ 独立显卡（推荐）</p>
         </div>
 
-        <a href="https://pan.quark.cn/s/752a92252baa" id="downloadBtn"class="download-button"target="_blank"title="295MB文件，请登录夸克网盘下载">立即下载 (295MB)</a>
+        <a href="https://pan.quark.cn/s/752a92252baa" class="download-button" id="downloadBtn" download>立即下载 (295MB)</a>
     </div>
 
     <script>
         // 添加下载动画
         const downloadBtn = document.getElementById('downloadBtn');
-        
-        downloadBtn.addEventListener('click', function(e) {
-            e.preventDefault();
             
             // 添加点击动画
             this.style.transform = 'scale(0.95)';
             setTimeout(() => {
                 this.style.transform = 'scale(1)';
             }, 200);
-
-            // 创建隐藏的iframe触发下载
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.src = this.href;
-            document.body.appendChild(iframe);
             
             setTimeout(() => {
                 document.body.removeChild(iframe);
