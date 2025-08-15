@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>与Tx的MC时光记事 | 方块记忆</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'mc-green': '#7CFC00',
+                        'mc-grass': '#228B22',
+                        'mc-wood': '#CD853F',
+                        'mc-stone': '#A9A9A9',
+                        'mc-sky': '#87CEEB',
+                        'mc-night': '#0F2B46',
+                        'mc-lava': '#FF4500',
+                        'mc-nether': '#8B0000',
+                        'mc-end': '#4B0082',
+                    },
+                    fontFamily: {
+                        'pixel': ['"Press Start 2P"', 'cursive'],
+                        'mc': ['"Minecraftia"', 'monospace', 'sans-serif'],
+                        'vt': ['"VT323"', 'monospace'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'float-fast': 'float 4s ease-in-out infinite',
+                        'float-slow': 'float 8s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 15s linear infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'block-place': 'blockPlace 0.3s ease-out forwards',
+                        'text-fade-in': 'textFadeIn 1s ease-out forwards',
+                        'reveal': 'reveal 1.2s ease-out forwards',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        glow: {
+                            '0%': { boxShadow: '0 0 5px rgba(124, 252, 0, 0.5)' },
+                            '100%': { boxShadow: '0 0 20px rgba(124, 252, 0, 0.8)' },
+                        },
+                        blockPlace: {
+                            '0%': { transform: 'scale(0) rotate(0deg)' },
+                            '70%': { transform: 'scale(1.1) rotate(5deg)' },
+                            '100%': { transform: 'scale(1) rotate(0deg)' },
+                        },
+                        textFadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        reveal: {
+                            '0%': { clipPath: 'inset(0 100% 0 0)' },
+                            '100%': { clipPath: 'inset(0 0 0 0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            }
+            .text-shadow-lg {
+                text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+            }
+            .text-shadow-glow {
+                text-shadow: 0 0 10px rgba(124, 252, 0, 0.7),
+                             0 0 20px rgba(124, 252, 0, 0.5);
+            }
+            .block-pattern {
+                background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%237CFC00' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            }
+            .mc-cube {
+                transform-style: preserve-3d;
+                perspective: 800px;
+            }
+            .mc-border {
+                box-shadow: 0 0 0 2px #333, 
+                            inset 0 0 0 2px #333;
+            }
+            .parallax-bg {
+                background-attachment: fixed;
+                background-position: center;
+                background-repeat: no-repeat;
+                background-size: cover;
+            }
+            .timeline-connector {
+                @apply absolute left-1/2 top-0 bottom-0 w-1 bg-mc-green/30 transform -translate-x-1/2;
+            }
+            .clip-path-slant {
+                clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+            }
+            .pixel-corners {
+                clip-path: polygon(
+                    0% 4px, 4px 4px, 4px 0%, calc(100% - 4px) 0%, calc(100% - 4px) 4px, 
+                    100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), 
+                    calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0% calc(100% - 4px)
+                );
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+</head>
+<body class="bg-mc-night text-gray-100 block-pattern min-h-screen overflow-x-hidden">
+    <!-- 粒子背景 -->
+    <div id="particles" class="fixed inset-0 pointer-events-none z-0 opacity-30"></div>
+
+    <!-- 导航栏 -->
+    <nav id="navbar" class="fixed w-full z-50 transition-all duration-500 bg-mc-night/60 backdrop-blur-lg">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <!-- 3D方块logo -->
+                <div class="w-12 h-12 mr-4 relative mc-cube animate-spin-slow">
+                    <div class="absolute inset-0 bg-mc-green transform rotate-y-0 translate-z-6 flex items-center justify-center">
+                        <div class="w-6 h-6 grid grid-cols-2 grid-rows-2">
+                            <div class="bg-mc-grass"></div>
+                            <div class="bg-mc-green"></div>
+                            <div class="bg-mc-green"></div>
+                            <div class="bg-mc-grass"></div>
+                        </div>
+                    </div>
+                    <div class="absolute inset-0 bg-mc-wood transform rotate-y-90 translate-z-6"></div>
+                    <div class="absolute inset-0 bg-mc-stone transform rotate-y-180 translate-z-6"></div>
+                    <div class="absolute inset-0 bg-mc-wood transform rotate-y-270 translate-z-6"></div>
+                    <div class="absolute inset-0 bg-mc-green transform rotate-x-90 translate-z-6"></div>
+                    <div class="absolute inset-0 bg-mc-grass transform rotate-x-270 translate-z-6"></div>
+                </div>
+                <h1 class="text-xl md:text-2xl font-pixel text-mc-green tracking-wider">
+                    <span class="animate-pulse-slow">M</span>C<span class="animate-pulse-slow" style="animation-delay: 0.5s">时</span>光
+                </h1>
+            </div>
+            <div class="hidden md:flex space-x-8">
+                <a href="#chapter-1" class="group relative py-2 font-vt text-lg after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-mc-green after:transition-all after:duration-300 group-hover:after:w-full">初识</a>
+                <a href="#chapter-2" class="group relative py-2 font-vt text-lg after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-mc-green after:transition-all after:duration-300 group-hover:after:w-full">扩张</a>
+                <a href="#chapter-3" class="group relative py-2 font-vt text-lg after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-mc-green after:transition-all after:duration-300 group-hover:after:w-full">等待</a>
+                <a href="#chapter-4" class="group relative py-2 font-vt text-lg after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-mc-green after:transition-all after:duration-300 group-hover:after:w-full">重逢</a>
+                <a href="#gallery" class="group relative py-2 font-vt text-lg after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-mc-green after:transition-all after:duration-300 group-hover:after:w-full">记忆库</a>
+            </div>
+            <button id="menu-toggle" class="md:hidden text-2xl text-gray-200 hover:text-mc-green transition-colors">
+                <i class="fa fa-bars"></i>
+            </button>
+        </div>
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-mc-night/95 backdrop-blur-md border-t border-gray-800">
+            <div class="container mx-auto px-4 py-4 flex flex-col space-y-4">
+                <a href="#chapter-1" class="py-3 border-b border-gray-800 hover:text-mc-green transition-colors font-vt text-lg">初识与初探 (2024.1)</a>
+                <a href="#chapter-2" class="py-3 border-b border-gray-800 hover:text-mc-green transition-colors font-vt text-lg">扩张与新篇 (2024.2-4)</a>
+                <a href="#chapter-3" class="py-3 border-b border-gray-800 hover:text-mc-green transition-colors font-vt text-lg">等待与续建 (2024.5-暑假)</a>
+                <a href="#chapter-4" class="py-3 border-b border-gray-800 hover:text-mc-green transition-colors font-vt text-lg">杂记与重逢 (2024下半年-2025)</a>
+                <a href="#gallery" class="py-3 hover:text-mc-green transition-colors font-vt text-lg">记忆库</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 -->
+    <header class="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+        <!-- 背景层次 -->
+        <div class="absolute inset-0 z-0">
+            <div class="absolute inset-0 bg-gradient-to-b from-mc-sky/40 via-mc-night/70 to-mc-night"></div>
+            <div class="absolute inset-0 bg-[url('https://picsum.photos/id/1028/1920/1080')] bg-cover bg-center opacity-30"></div>
+            <!-- 方块装饰层 -->
+            <div class="absolute inset-0 overflow-hidden">
+                <div class="absolute top-[10%] left-[5%] w-16 h-16 bg-mc-wood animate-float" style="animation-delay: 0s"></div>
+                <div class="absolute top-[20%] right-[15%] w-12 h-12 bg-mc-stone animate-float-fast" style="animation-delay: 0.3s"></div>
+                <div class="absolute bottom-[30%] left-[20%] w-10 h-10 bg-mc-green animate-float-slow" style="animation-delay: 0.7s"></div>
+                <div class="absolute bottom-[20%] right-[10%] w-14 h-14 bg-mc-lava/80 animate-float" style="animation-delay: 1s"></div>
+                <div class="absolute top-[40%] left-[30%] w-8 h-8 bg-mc-end/80 animate-float-fast" style="animation-delay: 1.2s"></div>
+            </div>
+        </div>
+        
+        <!-- 主标题内容 -->
+        <div class="container mx-auto px-4 relative z-10 text-center">
+            <div class="inline-block mb-6 px-4 py-2 bg-mc-night/80 backdrop-blur-md rounded-lg mc-border animate-glow">
+                <span class="font-pixel text-sm text-gray-300">2024年1月 - 至今</span>
+            </div>
+            <h1 class="text-5xl md:text-7xl lg:text-9xl font-pixel mb-6 text-mc-green animate-text-fade-in text-shadow-glow leading-none">
+                与Tx的<br class="md:hidden">MC时光
+            </h1>
+            <p class="text-xl md:text-2xl lg:text-3xl max-w-3xl mx-auto mb-10 text-gray-200 animate-text-fade-in" style="animation-delay: 0.5s">
+                一段从方块开始的友谊，跨越像素世界的漫长旅程
+            </p>
+            <div class="animate-text-fade-in" style="animation-delay: 0.8s">
+                <a href="#chapter-1" class="inline-block bg-mc-wood hover:bg-amber-700 text-white font-bold py-4 px-8 rounded-lg mc-border transition-all duration-300 hover:scale-105">
+                    <span class="font-pixel text-sm">开始探索</span>
+                    <i class="fa fa-chevron-down ml-2"></i>
+                </a>
+            </div>
+            
+            <!-- 滚动指示器 -->
+            <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce">
+                <span class="text-sm text-gray-400 mb-2 font-vt">向下滚动</span>
+                <i class="fa fa-angle-double-down text-mc-green"></i>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- 统计概览 -->
+        <section class="py-16 bg-gradient-to-b from-mc-night to-mc-night/90 relative overflow-hidden">
+            <div class="container mx-auto px-4 relative z-10">
+                <h2 class="text-3xl md:text-4xl font-pixel mb-12 text-center text-mc-green">冒险数据</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- 统计卡片 1 -->
+                    <div class="bg-mc-night/60 backdrop-blur-md p-6 rounded-lg mc-border transform transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_15px_rgba(124,252,0,0.3)]">
+                        <div class="w-12 h-12 bg-mc-green/20 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-calendar text-2xl text-mc-green"></i>
+                        </div>
+                        <h3 class="text-xl font-vt text-gray-300 mb-2">持续时间</h3>
+                        <p class="text-4xl font-pixel text-mc-green">1年7个月</p>
+                        <p class="text-sm text-gray-500 mt-2">从第一次联机至今</p>
+                    </div>
+                    
+                    <!-- 统计卡片 2 -->
+                    <div class="bg-mc-night/60 backdrop-blur-md p-6 rounded-lg mc-border transform transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_15px_rgba(124,252,0,0.3)]">
+                        <div class="w-12 h-12 bg-mc-wood/20 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-server text-2xl text-mc-wood"></i>
+                        </div>
+                        <h3 class="text-xl font-vt text-gray-300 mb-2">创建存档</h3>
+                        <p class="text-4xl font-pixel text-mc-wood">8+</p>
+                        <p class="text-sm text-gray-500 mt-2">包括生存、模组和服务器</p>
+                    </div>
+                    
+                    <!-- 统计卡片 3 -->
+                    <div class="bg-mc-night/60 backdrop-blur-md p-6 rounded-lg mc-border transform transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_15px_rgba(124,252,0,0.3)]">
+                        <div class="w-12 h-12 bg-mc-nether/20 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-flag-checkered text-2xl text-mc-lava"></i>
+                        </div>
+                        <h3 class="text-xl font-vt text-gray-300 mb-2">共同成就</h3>
+                        <p class="text-4xl font-pixel text-mc-lava">12+</p>
+                        <p class="text-sm text-gray-500 mt-2">包括击败末影龙、探索远方</p>
+                    </div>
+                    
+                    <!-- 统计卡片 4 -->
+                    <div class="bg-mc-night/60 backdrop-blur-md p-6 rounded-lg mc-border transform transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_15px_rgba(124,252,0,0.3)]">
+                        <div class="w-12 h-12 bg-mc-sky/20 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-clock-o text-2xl text-mc-sky"></i>
+                        </div>
+                        <h3 class="text-xl font-vt text-gray-300 mb-2">游戏时长</h3>
+                        <p class="text-4xl font-pixel text-mc-sky">200+</p>
+                        <p class="text-sm text-gray-500 mt-2">估算小时数</p>
+                    </div>
+                </div>
+                
+                <!-- 活动图表 -->
+                <div class="mt-16 bg-mc-night/60 backdrop-blur-md p-6 rounded-lg mc-border">
+                    <h3 class="text-2xl font-vt text-center mb-6">活跃度趋势</h3>
+                    <div class="h-64">
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 时间线章节 -->
+        <section class="relative py-20">
+            <!-- 时间线连接线 -->
+            <div class="timeline-connector hidden md:block"></div>
+            
+            <!-- 第一章：初识与初探 -->
+            <div id="chapter-1" class="container mx-auto px-4 mb-32 scroll-mt-24">
+                <div class="flex flex-col md:flex-row items-center">
+                    <!-- 时间点标记 -->
+                    <div class="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-10 h-10 rounded-full bg-mc-green z-10 border-4 border-mc-night shadow-[0_0_15px_rgba(124,252,0,0.5)]"></div>
+                    
+                    <!-- 左侧内容（偶数章节在右侧） -->
+                    <div class="md:w-5/12 mb-10 md:mb-0 md:pr-12 md:text-right reveal-item">
+                        <div class="inline-block mb-4 px-3 py-1 bg-mc-green/20 text-mc-green rounded-full text-sm font-vt">
+                            2024年1月
+                        </div>
+                        <h2 class="text-3xl md:text-4xl font-pixel mb-6 text-mc-green">初识与初探</h2>
+                        <div class="space-y-4 text-gray-300">
+                            <p>2024年1月5日的下午，我的世界论坛里一条2023年12月的交友帖成了缘分的起点。复制下那串QQ号时，没想到会开启一段漫长的方块世界同行路。</p>
+                            
+                            <p>他是小升初的Tx，住在深圳固戍区，我是即将升入初二的玩家，我们的游戏名Dinskel与ZxGoldenStar，从此开始在像素大陆上频繁交汇。</p>
+                            
+                            <p>初识当天便敲定共闯1.20版本。本想沿用我的生存存档联机，却因操作生疏作罢，最终由他用Frp内网穿透创建存档。至今记得出生时卡在树杈上的窘迫，任务栏缩略图里，他对着树上的我蹲跳两下的友好示意，像一声无声的"你好"。</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 中间图片（隐藏在移动端） -->
+                    <div class="hidden md:block md:w-2/12"></div>
+                    
+                    <!-- 右侧图片 -->
+                    <div class="md:w-5/12 reveal-item">
+                        <div class="relative group">
+                            <!-- 3D效果容器 -->
+                            <div class="relative transform transition-transform duration-700 group-hover:rotate-y-12 group-hover:rotate-x-3">
+                                <img src="https://picsum.photos/id/137/800/600" alt="《我的世界》初始场景，简单的木屋和周围环境" class="w-full h-auto rounded-lg mc-border shadow-xl">
+                                
+                                <!-- 悬浮信息卡 -->
+                                <div class="absolute -bottom-6 -left-6 bg-mc-night/90 backdrop-blur-md p-4 rounded-lg mc-border opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-48">
+                                    <h4 class="font-pixel text-sm text-mc-green mb-1">我们的第一个家</h4>
+                                    <p class="text-xs text-gray-400">河边平原的树上搭的简陋木屋，一切开始的地方</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 装饰性方块 -->
+                            <div class="absolute -top-4 -right-4 w-8 h-8 bg-mc-wood animate-float-fast"></div>
+                            <div class="absolute -bottom-2 -left-2 w-6 h-6 bg-mc-stone animate-float"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 第二章：扩张与新篇 -->
+            <div id="chapter-2" class="container mx-auto px-4 mb-32 scroll-mt-24">
+                <div class="flex flex-col md:flex-row-reverse items-center">
+                    <!-- 时间点标记 -->
+                    <div class="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-10 h-10 rounded-full bg-mc-wood z-10 border-4 border-mc-night shadow-[0_0_15px_rgba(205,133,63,0.5)]"></div>
+                    
+                    <!-- 右侧内容 -->
+                    <div class="md:w-5/12 mb-10 md:mb-0 md:pl-12 reveal-item">
+                        <div class="inline-block mb-4 px-3 py-1 bg-mc-wood/20 text-mc-wood rounded-full text-sm font-vt">
+                            2024年2月 - 4月
+                        </div>
+                        <h2 class="text-3xl md:text-4xl font-pixel mb-6 text-mc-wood">扩张与新篇</h2>
+                        <div class="space-y-4 text-gray-300">
+                            <p>2月到3月，我们的探索边界不断延伸：闯下界、踏末地，引来村民建起生电机器，搭起末影人塔。直到两人都穿上全套顶级下界合金装备，甚至野心勃勃地想收集全物品。</p>
+                            
+                            <p>3月渐疏那个存档时，B站up主令宇_ArYu的"悠闲的时光"系列给了我新灵感。恰逢网友Logic推荐免费服务器平台"简幻欢"，2024年3月3日15点20分，属于我们的服务器诞生了。</p>
+                            
+                            <p>4月20日是痛快畅玩的一天：我建了刷石机，Tx则主导建起横跨小河的小长城，我做后勤时，看他一点点垒起城墙的样子，像在搭建现实里的桥梁。</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 中间图片（隐藏在移动端） -->
+                    <div class="hidden md:block md:w-2/12"></div>
+                    
+                    <!-- 左侧图片 -->
+                    <div class="md:w-5/12 reveal-item">
+                        <div class="relative group">
+                            <div class="relative transform transition-transform duration-700 group-hover:rotate-y-(-12deg) group-hover:rotate-x-3">
+                                <img src="https://picsum.photos/id/145/800/600" alt="《我的世界》中更宏大的基地建设，扩展的建筑和基础设施" class="w-full h-auto rounded-lg mc-border shadow-xl">
+                                
+                                <div class="absolute -bottom-6 -right-6 bg-mc-night/90 backdrop-blur-md p-4 rounded-lg mc-border opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-48">
+                                    <h4 class="font-pixel text-sm text-mc-wood mb-1">小长城工程</h4>
+                                    <p class="text-xs text-gray-400">Tx主导建设的横跨小河的长城，连接我们的世界</p>
+                                </div>
+                            </div>
+                            
+                            <div class="absolute -top-4 -left-4 w-8 h-8 bg-mc-stone animate-float"></div>
+                            <div class="absolute -bottom-2 -right-2 w-6 h-6 bg-mc-green animate-float-fast"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 第三章：等待与续建 -->
+            <div id="chapter-3" class="container mx-auto px-4 mb-32 scroll-mt-24">
+                <div class="flex flex-col md:flex-row items-center">
+                    <!-- 时间点标记 -->
+                    <div class="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-10 h-10 rounded-full bg-mc-stone z-10 border-4 border-mc-night shadow-[0_0_15px_rgba(169,169,169,0.5)]"></div>
+                    
+                    <!-- 左侧内容 -->
+                    <div class="md:w-5/12 mb-10 md:mb-0 md:pr-12 md:text-right reveal-item">
+                        <div class="inline-block mb-4 px-3 py-1 bg-mc-stone/20 text-mc-stone rounded-full text-sm font-vt">
+                            2024年5月 - 暑假
+                        </div>
+                        <h2 class="text-3xl md:text-4xl font-pixel mb-6 text-mc-stone">等待与续建</h2>
+                        <div class="space-y-4 text-gray-300">
+                            <p>Tx突然断了消息，不上线也不回消息，服务器随之沉寂。那段时间刷到B站建筑教程，一个嵌在地下的小基地与我们曾建的如出一辙，只是更小巧。我立刻转发给Tx："就按这个建，下次来多挖点石英。"</p>
+                            
+                            <p>两天后上线，箱子里多了几组石英，他没留消息，却用方块说了"好"。我填上丑地洞，独自开始新屋建设。因准备小升初考试，进度慢得像蜗牛爬，挖点石英就从下界带回烧制，一点点填补墙壁。</p>
+                            
+                            <p>直到暑假，7月13日得知Tx次日要来，兴奋得截下服务器里的日出图，至今仍是手机壁纸。7月18日的截图成了服务器最后的影像——后来因遗忘备份，存档彻底消失在数据里。</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 中间图片（隐藏在移动端） -->
+                    <div class="hidden md:block md:w-2/12"></div>
+                    
+                    <!-- 右侧图片 -->
+                    <div class="md:w-5/12 reveal-item">
+                        <div class="relative group">
+                            <div class="relative transform transition-transform duration-700 group-hover:rotate-y-12 group-hover:rotate-x-(-3deg)">
+                                <img src="https://picsum.photos/id/188/800/600" alt="《我的世界》中未完成的建筑，独自建设的场景" class="w-full h-auto rounded-lg mc-border shadow-xl">
+                                
+                                <div class="absolute -bottom-6 -left-6 bg-mc-night/90 backdrop-blur-md p-4 rounded-lg mc-border opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-48">
+                                    <h4 class="font-pixel text-sm text-mc-stone mb-1">独自建设</h4>
+                                    <p class="text-xs text-gray-400">Tx离开期间，独自完成的地下基地</p>
+                                </div>
+                            </div>
+                            
+                            <div class="absolute -top-4 -right-4 w-8 h-8 bg-mc-green animate-float"></div>
+                            <div class="absolute -bottom-2 -left-2 w-6 h-6 bg-mc-wood animate-float-fast"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 第四章：杂记与重逢 -->
+            <div id="chapter-4" class="container mx-auto px-4 mb-20 scroll-mt-24">
+                <div class="flex flex-col md:flex-row-reverse items-center">
+                    <!-- 时间点标记 -->
+                    <div class="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-10 h-10 rounded-full bg-mc-sky z-10 border-4 border-mc-night shadow-[0_0_15px_rgba(135,206,235,0.5)]"></div>
+                    
+                    <!-- 右侧内容 -->
+                    <div class="md:w-5/12 mb-10 md:mb-0 md:pl-12 reveal-item">
+                        <div class="inline-block mb-4 px-3 py-1 bg-mc-sky/20 text-mc-sky rounded-full text-sm font-vt">
+                            2024下半年 - 2025年
+                        </div>
+                        <h2 class="text-3xl md:text-4xl font-pixel mb-6 text-mc-sky">杂记与重逢</h2>
+                        <div class="space-y-4 text-gray-300">
+                            <p>2024年暑假到12月，我们玩得很杂：下了超级大雪山地图，开着"遥远的地平线"模组，一起爬上第三高的山峰（1000多米），在山顶合影时，像素太阳正落在我们身后。</p>
+                            
+                            <p>今年寒假的记忆有些模糊，只记得他备考小升初时，又断联了两三个月。7月初开了新生存存档，约好次日继续，他却突然消失——后来才知是回了老家，那一个月里，我总对着灰色的QQ头像发呆，以为再也等不到回复。</p>
+                            
+                            <p>直到8月初，电脑屏幕上他的头像突然闪动，恍惚得以为是幻觉。如今我们每天下午3点左右，用他曾开的存档搭私服，准时玩上一小时。今天，方块碰撞的声音仍在继续，像那段从2024年1月开始的故事，从未真的结束。</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 中间图片（隐藏在移动端） -->
+                    <div class="hidden md:block md:w-2/12"></div>
+                    
+                    <!-- 左侧图片 -->
+                    <div class="md:w-5/12 reveal-item">
+                        <div class="relative group">
+                            <div class="relative transform transition-transform duration-700 group-hover:rotate-y-(-12deg) group-hover:rotate-x-(-3deg)">
+                                <img src="https://picsum.photos/id/110/800/600" alt="《我的世界》中山顶日出的场景，象征重逢与新的开始" class="w-full h-auto rounded-lg mc-border shadow-xl">
+                                
+                                <div class="absolute -bottom-6 -right-6 bg-mc-night/90 backdrop-blur-md p-4 rounded-lg mc-border opacity-0 group-hover:opacity-100 transition-opacity duration-300 w-48">
+                                    <h4 class="font-pixel text-sm text-mc-sky mb-1">雪山日出</h4>
+                                    <p class="text-xs text-gray-400">在1000多米高的山峰上看到的日出</p>
+                                </div>
+                            </div>
+                            
+                            <div class="absolute -top-4 -left-4 w-8 h-8 bg-mc-end/70 animate-float-fast"></div>
+                            <div class="absolute -bottom-2 -right-2 w-6 h-6 bg-mc-lava/70 animate-float"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 视差分隔区 -->
+        <section class="parallax-bg h-96 relative" style="background-image: url('https://picsum.photos/id/1048/1920/1080')">
+            <div class="absolute inset-0 bg-gradient-to-r from-mc-night/80 to-mc-night/40"></div>
+            <div class="container mx-auto px-4 h-full flex items-center relative z-10">
+                <div class="max-w-2xl">
+                    <h2 class="text-4xl md:text-6xl font-pixel mb-6 text-white text-shadow-lg">
+                        "方块会消失，但记忆不会"
+                    </h2>
+                    <p class="text-xl text-gray-200 text-shadow">
+                        即使存档丢失，我们一起建造的时光永远存在
+                    </p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 记忆库 -->
+        <section id="gallery" class="py-20 relative scroll-mt-24">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl md:text-4xl font-pixel mb-4 text-center text-mc-green">记忆库</h2>
+                <p class="text-center text-gray-400 mb-12 max-w-2xl mx-auto">珍贵的游戏瞬间，记录着我们共同的冒险足迹</p>
+                
+                <!-- 过滤标签 -->
+                <div class="flex flex-wrap justify-center gap-3 mb-10">
+                    <button class="filter-btn active px-4 py-2 rounded-full bg-mc-green text-mc-night font-vt text-sm hover:bg-mc-green/80 transition-colors">全部</button>
+                    <button class="filter-btn px-4 py-2 rounded-full bg-gray-800/50 text-gray-300 font-vt text-sm hover:bg-gray-800 transition-colors">基地建设</button>
+                    <button class="filter-btn px-4 py-2 rounded-full bg-gray-800/50 text-gray-300 font-vt text-sm hover:bg-gray-800 transition-colors">探险旅程</button>
+                    <button class="filter-btn px-4 py-2 rounded-full bg-gray-800/50 text-gray-300 font-vt text-sm hover:bg-gray-800 transition-colors">风景奇观</button>
+                    <button class="filter-btn px-4 py-2 rounded-full bg-gray-800/50 text-gray-300 font-vt text-sm hover:bg-gray-800 transition-colors">成就时刻</button>
+                </div>
+                
+                <!-- 图片网格 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- 图片项 1 -->
+                    <div class="gallery-item group base-construction reveal-item">
+                        <div class="relative overflow-hidden rounded-lg mc-border aspect-[4/3]">
+                            <img src="https://picsum.photos/id/235/800/600" alt="《我的世界》中简陋的初始木屋，代表故事的开始" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-mc-night/90 via-mc-night/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
+                                <span class="inline-block px-2 py-1 bg-mc-green/80 text-mc-night text-xs font-pixel rounded mb-2 w-max">基地建设</span>
+                                <h3 class="text-xl font-pixel text-white mb-1">我们的第一个家</h3>
+                                <p class="text-sm text-gray-200">河边平原的树上搭的简陋木屋，一切开始的地方</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 图片项 2 -->
+                    <div class="gallery-item group achievement reveal-item">
+                        <div class="relative overflow-hidden rounded-lg mc-border aspect-[4/3]">
+                            <img src="https://picsum.photos/id/237/800/600" alt="《我的世界》末影龙战斗场景，代表共同挑战" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-mc-night/90 via-mc-night/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
+                                <span class="inline-block px-2 py-1 bg-mc-lava/80 text-white text-xs font-pixel rounded mb-2 w-max">成就时刻</span>
+                                <h3 class="text-xl font-pixel text-white mb-1">末影龙之战</h3>
+                                <p class="text-sm text-gray-200">第一次在生存模式挑战末影龙，同步跳砍的瞬间</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 图片项 3 -->
+                    <div class="gallery-item group landscape reveal-item">
+                        <div class="relative overflow-hidden rounded-lg mc-border aspect-[4/3]">
+                            <img src="https://picsum.photos/id/239/800/600" alt="《我的世界》中的樱花高原，美丽的自然景观" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-mc-night/90 via-mc-night/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
+                                <span class="inline-block px-2 py-1 bg-mc-sky/80 text-gray-800 text-xs font-pixel rounded mb-2 w-max">风景奇观</span>
+                                <h3 class="text-xl font-pixel text-white mb-1">樱花高原</h3>
+                                <p class="text-sm text-gray-200">被河水环抱的樱花高原，像闯入世外桃源</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 图片项 4 -->
+                    <div class="gallery-item group base-construction reveal-item">
+                        <div class="relative overflow-hidden rounded-lg mc-border aspect-[4/3]">
+                            <img src="https://picsum.photos/id/240/800/600" alt="《我的世界》中的小长城，展示合作建设的成果" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-mc-night/90 via-mc-night/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
+                                <span class="inline-block px-2 py-1 bg-mc-green/80 text-mc-night text-xs font-pixel rounded mb-2 w-max">基地建设</span>
+                                <h3 class="text-xl font-pixel text-white mb-1">小长城</h3>
+                                <p class="text-sm text-gray-200">Tx主导建起横跨小河的小长城，连接我们的世界</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 图片项 5 -->
+                    <div class="gallery-item group adventure reveal-item">
+                        <div class="relative overflow-hidden rounded-lg mc-border aspect-[4/3]">
+                            <img src="https://picsum.photos/id/241/800/600" alt="《我的世界》中的雪山场景，展示探险的足迹" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-mc-night/90 via-mc-night/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
+                                <span class="inline-block px-2 py-1 bg-mc-stone/80 text-white text-xs font-pixel rounded mb-2 w-max">探险旅程</span>
+                                <h3 class="text-xl font-pixel text-white mb-1">雪山之巅</h3>
+                                <p class="text-sm text-gray-200">一起爬上第三高的山峰，1000多米的高度见证友谊</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 图片项 6 -->
+                    <div class="gallery-item group landscape reveal-item">
+                        <div class="relative overflow-hidden rounded-lg mc-border aspect-[4/3]">
+                            <img src="https://picsum.photos/id/242/800/600" alt="《我的世界》中的日出场景，象征新的开始" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-mc-night/90 via-mc-night/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-5">
+                                <span class="inline-block px-2 py-1 bg-mc-sky/80 text-gray-800 text-xs font-pixel rounded mb-2 w-max">风景奇观</span>
+                                <h3 class="text-xl font-pixel text-white mb-1">服务器日出</h3>
+                                <p class="text-sm text-gray-200">7月13日截下的服务器日出图，至今仍是手机壁纸</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 语录墙 -->
+        <section class="py-20 bg-gradient-to-b from-mc-night to-mc-night/90 relative overflow-hidden clip-path-slant">
+            <div class="container mx-auto px-4 relative z-10">
+                <h2 class="text-3xl md:text-4xl font-pixel mb-12 text-center text-mc-green">方块语录</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- 语录卡片 1 -->
+                    <div class="bg-mc-night/60 backdrop-blur-md p-6 rounded-lg mc-border transform transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_15px_rgba(124,252,0,0.2)] reveal-item">
+                        <div class="text-5xl text-mc-green/30 mb-4">
+                            <i class="fa fa-quote-left"></i>
+                        </div>
+                        <p class="text-gray-300 mb-6 italic">"最后一次重开，要像第一次那样认真"</p>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center mr-3">
+                                <span class="font-pixel text-xs">我</span>
+                            </div>
+                            <div>
+                                <h4 class="font-vt text-gray-200">第一次存档崩溃后</h4>
+                                <p class="text-xs text-gray-500">2024年1月</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 语录卡片 2 -->
+                    <div class="bg-mc-night/60 backdrop-blur-md p-6 rounded-lg mc-border transform transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_15px_rgba(124,252,0,0.2)] reveal-item">
+                        <div class="text-5xl text-mc-wood/30 mb-4">
+                            <i class="fa fa-quote-left"></i>
+                        </div>
+                        <p class="text-gray-300 mb-6 italic">"就按这个建，下次来多挖点石英"</p>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center mr-3">
+                                <span class="font-pixel text-xs">我</span>
+                            </div>
+                            <div>
+                                <h4 class="font-vt text-gray-200">看到教程后发给Tx</h4>
+                                <p class="text-xs text-gray-500">2024年5月</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 语录卡片 3 -->
+                    <div class="bg-mc-night/60 backdrop-blur-md p-6 rounded-lg mc-border transform transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_15px_rgba(124,252,0,0.2)] reveal-item">
+                        <div class="text-5xl text-mc-sky/30 mb-4">
+                            <i class="fa fa-quote-left"></i>
+                        </div>
+                        <p class="text-gray-300 mb-6 italic">"今天继续吗？我建了个新存档"</p>
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center mr-3">
+                                <span class="font-pixel text-xs">Tx</span>
+                            </div>
+                            <div>
+                                <h4 class="font-vt text-gray-200">消失一个月后的消息</h4>
+                                <p class="text-xs text-gray-500">2025年8月</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 结束语 -->
+        <section class="py-20 relative">
+            <div class="container mx-auto px-4 text-center max-w-4xl">
+                <div class="inline-block mb-8 px-6 py-3 bg-mc-green/10 rounded-full mc-border">
+                    <span class="font-pixel text-mc-green text-sm">未完待续</span>
+                </div>
+                <h2 class="text-3xl md:text-5xl font-pixel mb-8 text-white text-shadow-lg reveal-item">
+                    方块的故事还在继续
+                </h2>
+                <p class="text-xl text-gray-300 mb-10 leading-relaxed reveal-item">
+                    从2024年1月到现在，方块世界里的每一次挖掘、每一次建造、每一次探险，
+                    都记录着我们的友谊。那些消失的存档或许带走了像素建筑，
+                    却带不走共同创造的回忆。
+                </p>
+                <p class="text-xl text-gray-300 mb-12 leading-relaxed reveal-item">
+                    如今，新的方块仍在被放置，新的故事仍在被书写。
+                    这段从虚拟世界开始的友谊，早已成为现实生活中珍贵的一部分。
+                </p>
+                <div class="reveal-item">
+                    <a href="#chapter-1" class="inline-block bg-mc-green hover:bg-mc-grass text-mc-night font-bold py-4 px-8 rounded-lg mc-border transition-all duration-300 hover:scale-105">
+                        <span class="font-pixel text-sm">重新开始</span>
+                        <i class="fa fa-refresh ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-mc-night/80 backdrop-blur-md py-12 border-t border-gray-800">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-10">
+                <div class="mb-6 md:mb-0">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 mr-3 bg-mc-green">
+                            <div class="w-full h-full grid grid-cols-2 grid-rows-2">
+                                <div class="bg-mc-grass"></div>
+                                <div class="bg-mc-green"></div>
+                                <div class="bg-mc-green"></div>
+                                <div class="bg-mc-grass"></div>
+                            </div>
+                        </div>
+                        <h2 class="text-xl font-pixel text-mc-green">MC时光记事</h2>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">记录与Tx的方块世界冒险</p>
+                </div>
+                
+                <div class="flex space-x-6">
+                    <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-mc-green hover:bg-gray-700 transition-all duration-300">
+                        <i class="fa fa-qq"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-mc-green hover:bg-gray-700 transition-all duration-300">
+                        <i class="fa fa-gamepad"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-mc-green hover:bg-gray-700 transition-all duration-300">
+                        <i class="fa fa-book"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10 border-t border-b border-gray-800 py-8">
+                <div>
+                    <h3 class="text-lg font-vt text-white mb-4">章节导航</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#chapter-1" class="text-gray-400 hover:text-mc-green transition-colors">初识与初探</a></li>
+                        <li><a href="#chapter-2" class="text-gray-400 hover:text-mc-green transition-colors">扩张与新篇</a></li>
+                        <li><a href="#chapter-3" class="text-gray-400 hover:text-mc-green transition-colors">等待与续建</a></li>
+                        <li><a href="#chapter-4" class="text-gray-400 hover:text-mc-green transition-colors">杂记与重逢</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-vt text-white mb-4">记忆分类</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#gallery" class="text-gray-400 hover:text-mc-green transition-colors">基地建设</a></li>
+                        <li><a href="#gallery" class="text-gray-400 hover:text-mc-green transition-colors">探险旅程</a></li>
+                        <li><a href="#gallery" class="text-gray-400 hover:text-mc-green transition-colors">风景奇观</a></li>
+                        <li><a href="#gallery" class="text-gray-400 hover:text-mc-green transition-colors">成就时刻</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-vt text-white mb-4">关于</h3>
+                    <p class="text-gray-400 mb-4">这是一份记录我与Tx在《我的世界》中共同冒险的回忆录，纪念这段从虚拟世界延伸到现实的友谊。</p>
+                    <p class="text-gray-500 text-sm">最后更新：2025年8月</p>
+                </div>
+            </div>
+            
+            <div class="text-center text-gray-500 text-sm">
+                <p>© 2025 与Tx的MC时光记事 | 方块会消失，记忆永不褪色</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 返回顶部按钮 -->
+    <button id="back-to-top" class="fixed bottom-8 right-8 bg-mc-green text-mc-night w-12 h-12 rounded-lg flex items-center justify-center text-xl shadow-lg opacity-0 invisible transition-all duration-500 hover:bg-mc-grass transform hover:rotate-12 z-50">
+        <i class="fa fa-arrow-up"></i>
+    </button>
+
+    <!-- 图片查看器模态框 -->
+    <div id="image-viewer" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center opacity-0 invisible transition-all duration-300">
+        <button id="close-viewer" class="absolute top-6 right-6 text-white text-3xl hover:text-mc-green transition-colors">
+            <i class="fa fa-times"></i>
+        </button>
+        <img id="viewer-image" src="" alt="大图预览" class="max-w-[90%] max-h-[80vh] object-contain">
+    </div>
+
+    <script>
+        // 移动端菜单切换
+        const menuToggle = document.getElementById('menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        menuToggle.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            menuToggle.innerHTML = mobileMenu.classList.contains('hidden') 
+                ? '<i class="fa fa-bars"></i>' 
+                : '<i class="fa fa-times"></i>';
+        });
+        
+        // 导航栏滚动效果
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 100) {
+                navbar.classList.add('py-2', 'shadow-lg', 'bg-mc-night/80');
+                navbar.classList.remove('py-4', 'bg-mc-night/60');
+            } else {
+                navbar.classList.add('py-4', 'bg-mc-night/60');
+                navbar.classList.remove('py-2', 'shadow-lg', 'bg-mc-night/80');
+            }
+        });
+        
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // 关闭移动菜单（如果打开）
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                    menuToggle.innerHTML = '<i class="fa fa-bars"></i>';
+                }
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // 返回顶部按钮
+        const backToTopButton = document.getElementById('back-to-top');
+        
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 500) {
+                backToTopButton.classList.remove('opacity-0', 'invisible');
+                backToTopButton.classList.add('opacity-100', 'visible');
+            } else {
+                backToTopButton.classList.add('opacity-0', 'invisible');
+                backToTopButton.classList.remove('opacity-100', 'visible');
+            }
+        });
+        
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // 滚动显示动画
+        const revealItems = document.querySelectorAll('.reveal-item');
+        
+        const revealOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+        
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    // 为元素添加延迟，创建级联效果
+                    setTimeout(() => {
+                        entry.target.classList.add('animate-reveal');
+                    }, index * 100);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, revealOptions);
+        
+        revealItems.forEach(item => {
+            revealObserver.observe(item);
+        });
+        
+        // 画廊过滤功能
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const galleryItems = document.querySelectorAll('.gallery-item');
+        
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // 更新按钮状态
+                filterButtons.forEach(btn => btn.classList.remove('active', 'bg-mc-green', 'text-mc-night'));
+                filterButtons.forEach(btn => btn.classList.add('bg-gray-800/50', 'text-gray-300'));
+                button.classList.add('active', 'bg-mc-green', 'text-mc-night');
+                button.classList.remove('bg-gray-800/50', 'text-gray-300');
+                
+                const filter = button.textContent;
+                
+                // 过滤画廊项目
+                galleryItems.forEach(item => {
+                    if (filter === '全部' || item.classList.contains(filter.toLowerCase().replace(/\s+/g, '-'))) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+        
+        // 图片查看器
+        const imageViewer = document.getElementById('image-viewer');
+        const viewerImage = document.getElementById('viewer-image');
+        const closeViewer = document.getElementById('close-viewer');
+        
+        galleryItems.forEach(item => {
+            const img = item.querySelector('img');
+            item.addEventListener('click', () => {
+                viewerImage.src = img.src;
+                viewerImage.alt = img.alt;
+                imageViewer.classList.remove('opacity-0', 'invisible');
+                imageViewer.classList.add('opacity-100', 'visible');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        
+        closeViewer.addEventListener('click', () => {
+            imageViewer.classList.add('opacity-0', 'invisible');
+            imageViewer.classList.remove('opacity-100', 'visible');
+            document.body.style.overflow = 'auto';
+        });
+        
+        // 点击外部关闭图片查看器
+        imageViewer.addEventListener('click', (e) => {
+            if (e.target === imageViewer) {
+                closeViewer.click();
+            }
+        });
+        
+        // 活动图表
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        const activityChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月', '1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月'],
+                datasets: [{
+                    label: '活动频率',
+                    data: [5, 8, 12, 10, 3, 2, 9, 7, 4, 6, 3, 5, 2, 1, 3, 6, 4, 2, 1, 7],
+                    borderColor: '#7CFC00',
+                    backgroundColor: 'rgba(124, 252, 0, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#7CFC00',
+                    pointBorderColor: '#0F2B46',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 43, 70, 0.9)',
+                        titleColor: '#7CFC00',
+                        bodyColor: '#fff',
+                        borderColor: '#7CFC00',
+                        borderWidth: 1,
+                        padding: 10,
+                        titleFont: {
+                            family: '"VT323", monospace'
+                        },
+                        bodyFont: {
+                            family: '"VT323", monospace'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            font: {
+                                family: '"VT323", monospace'
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            font: {
+                                family: '"VT323", monospace'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 创建粒子背景
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                
+                // 随机方块大小
+                const size = Math.random() * 6 + 2;
+                
+                // 随机位置
+                const posX = Math.random() * 100;
+                const posY = Math.random() * 100;
+                
+                // 随机颜色
+                const colors = ['#7CFC00', '#CD853F', '#A9A9A9', '#87CEEB', '#FF4500'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                // 随机动画延迟和持续时间
+                const delay = Math.random() * 5;
+                const duration = Math.random() * 20 + 10;
+                
+                particle.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    background-color: ${color};
+                    top: ${posY}%;
+                    left: ${posX}%;
+                    opacity: 0.5;
+                    animation: float ${duration}s ease-in-out infinite;
+                    animation-delay: ${delay}s;
+                    pointer-events: none;
+                `;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', () => {
+            createParticles();
+        });
+    </script>
+</body>
+</html>
+    
